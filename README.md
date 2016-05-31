@@ -1,12 +1,11 @@
-#GraphMapReduce: 基于MapReduce和MPI的图计算框架
+#GraphMapReduce: 基于MapReduce和MPI的图计算框架（Master分支已经不再使用，转至without_partition_tool分支）
+请见without_partition_tool分支README.md
 [![Build Status](https://travis-ci.org/flowlo/pcp-vns.png?branch=master)](https://travis-ci.org/flowlo/pcp-vns)    
 (名词约束: 顶点Vertex-图中顶点;节点Process-计算单元节点),目录说明:     
 
 
 > 代码主要包含四个文件: gmr.cpp gmr.h algorithms.h graph.h     
 > |__graph/---------#此目录包含测试用的图例数据     
-> |__include/-------#此目录包含所使用到的第三方库的头文件(目前只用到了ParMetis，去掉了GKlib)     
-> |__lib/------------#包含了使用到的第三方库     
 > |__gmr.cpp------#程序的main函数入口和迭代循环     
 > |__gmr.h---------#包含主要的计算过程函数computing()和计算结果更新函数updateGraph()     
 > |__algorithm.h---#常用图算法的MapReduce实现     
@@ -36,7 +35,6 @@ make clean && make
 | 举例1 |./startgmr.sh cluster hosts                                             |  | 
 | 举例2 |./startgmr.sh cluster hosts pagerank                                    |  |
 | 举例3 |./startgmr.sh cluster hosts sssp random                                 |  |
-| 举例4 |./startgmr.sh cluster hosts sssp metis 4elt                             |  |
 | 举例5 |./startgmr.sh cluster hosts pagerank metis small                        |  |
 | 或者直接运行 |i.) mpirun -machinefile hosts -np 10 gmr; ii.) mpirun -machinefile hosts -np 10 gmr pagerank random; iii.)mpirun -machinefile hosts -np 10 gmr pagerank trianglecount metis 4elt    ||
    
@@ -60,13 +58,8 @@ MPI进程按照其进程号依次等分的读取图文件的顶点，切分文�
 1. 普通图文件格式: from_vid to_vid
 这种输入图格式，在运行程序的时候需要选择"random"的partition方式(分图方式)。程序的各个进程将会并行且均分的读取文件的相应部分。(这种方式会导致迭代计算过程中信息交换量急剧增加.)
 
-2. metis输出的子图格式
-为了将全图的不同部分放到不同的计算节点进行并行计算，需要将原图划分为若干子图。划分工具采用开源的Parmetis进行(为方便使用，正在进行整合)。Parmetis是基于MPI进行大规模的子图划分，为了方便和适应我们的算法，我们对Parmetis的输出结果进行了重写，每个输出的节点的格式如下:
-```
-#节点id    节点权重       邻居1的id  邻居1所在进程        邻居1所在边权重 ...邻居N的id  邻居N所在进程        邻居N所在边权重
-vertex_id vertex_weight neighbor1 neighbor1.location edge1.weight ... neighborN neighborN.location edgeN.weight
-```
-为方便测试，测试数据目录graph/目录中已经分好了三个不同规模的图small、4elt、mdual，定点数和边数从几十个到几百万个。
+注意：metis输出的子图格式(不再使用任何分图工具，只使用随机分图方法)
+之前有使用过metis ,zoltan等分图工具，但是分图效果很差，时间开销太大且往往导致负载不均衡
 
 ## 三、迭代计算过程
 #### 1. 数据交换:
@@ -122,32 +115,3 @@ KV reduce(std::list<KV> &kvs) {
 }
 ```
 
-#### 4.2.3 PageRank终止点问题和陷阱问题
-上述上网者的行为是一个马尔科夫过程的实例，要满足收敛性，需要具备一个条件：
-图是强连通的，即从任意网页可以到达其他任意网页：
-互联网上的网页不满足强连通的特性，因为有一些网页不指向任何网页，如果按照上面的计算，上网者到达这样的网页后便走投无路、四顾茫然，导致前面累 计得到的转移概率被清零，这样下去，最终的得到的概率分布向量所有元素几乎都为0。假设我们把上面图中C到A的链接丢掉，C变成了一个终止点，得到下面这个图：
-
-![输入图片说明](http://git.oschina.net/uploads/images/2016/0111/214258_5e3a6ed7_496314.jpeg "在这里输入图片标题")
-
-另外一个问题就是陷阱问题，即有些网页不存在指向其他网页的链接，但存在指向自己的链接。比如下面这个图：
-
-![输入图片说明](http://git.oschina.net/uploads/images/2016/0111/214318_aadc9dd1_496314.jpeg "在这里输入图片标题")
-
-上网者跑到C网页后，就像跳进了陷阱，陷入了漩涡，再也不能从C中出来，将最终导致概率分布值全部转移到C上来，这使得其他网页的概率分布值为0，从而整个网页排名就失去了意义。
-
-### 4.2 单源最短路算法SSSP（DJ算法）
-
-### 4.3 TriangleCount
-
-### 4.4 并行广度优先搜索算法的MapReduce实现
-
-### 4.5 二度人脉算法:广度搜索算法
-
-## 五、对比实验
-|Processor\Platform |   GMR      |    Spark      |   GraphX       |    GraphLab      |     Pregel  |   
-|-------------------|------------|---------------|----------------|------------------|-------------|
-|      1            |            |               |                |                  |             |   
-|      3            |            |               |                |                  |             |   
-|      8            |            |               |                |                  |             |   
-|      16           |            |               |                |                  |             |   
-|      32           |            |               |                |                  |             |   
