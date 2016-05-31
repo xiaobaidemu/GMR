@@ -1,4 +1,4 @@
-#GraphMapReduce: 基于MapReduce编程模型的图计算框架
+#GraphMapReduce: 基于MapReduce和MPI的图计算框架
 [![Build Status](https://travis-ci.org/flowlo/pcp-vns.png?branch=master)](https://travis-ci.org/flowlo/pcp-vns)    
 (名词约束: 顶点Vertex-图中顶点;节点Process-计算单元节点),目录说明:     
 
